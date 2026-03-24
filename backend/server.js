@@ -11,7 +11,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/parent
 
 // Middleware
 app.use(cors({
-  origin: ['https://school-meeting.vercel.app'],
+  origin: '*',
   credentials: true
 }));
 
