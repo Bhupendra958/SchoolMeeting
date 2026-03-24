@@ -10,9 +10,19 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/parent-teacher-portal';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Root route
+app.get('/', (req, res) => {
+  res.send('Backend is running 🚀');
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -39,12 +49,17 @@ app.get('/api/health', (req, res) => {
 
 const startServer = async () => {
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+
     console.log('MongoDB connected successfully');
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
@@ -52,4 +67,3 @@ const startServer = async () => {
 };
 
 startServer();
-
