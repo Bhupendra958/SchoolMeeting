@@ -12,6 +12,8 @@ import {
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
+const API = process.env.REACT_APP_API_URL; // ✅ ADDED
+
 const ParentDashboard = () => {
   const { user } = useContext(AuthContext);
 
@@ -28,8 +30,10 @@ const ParentDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (user) { // ✅ FIX
+      fetchDashboardData();
+    }
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
@@ -41,12 +45,12 @@ const ParentDashboard = () => {
         meetingsRes,
         announcementsRes,
       ] = await Promise.all([
-        axios.get('/api/students'),
-        axios.get('/api/grades'),
-        axios.get('/api/attendance'),
-        axios.get('/api/messages/unread-count'),
-        axios.get('/api/meetings?status=confirmed'),
-        axios.get('/api/announcements'),
+        axios.get(`${API}/students`), // ✅ FIXED
+        axios.get(`${API}/grades`),
+        axios.get(`${API}/attendance`),
+        axios.get(`${API}/messages/unread-count`),
+        axios.get(`${API}/meetings?status=confirmed`),
+        axios.get(`${API}/announcements`),
       ]);
 
       setStudents(studentsRes.data);
@@ -86,6 +90,17 @@ const ParentDashboard = () => {
       setLoading(false);
     }
   };
+
+  // ✅ PREVENT WHITE SCREEN
+  if (!user) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64 text-white">
+          Loading user...
+        </div>
+      </Layout>
+    );
+  }
 
   if (loading) {
     return (
@@ -210,9 +225,7 @@ const ParentDashboard = () => {
   );
 };
 
-/* ===============================
-   Components
-================================ */
+/* =============================== */
 
 const StatCard = ({ icon: Icon, title, value, gradient, link }) => {
   return (
