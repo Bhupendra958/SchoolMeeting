@@ -92,7 +92,8 @@ mongodb://localhost:27017/parent-teacher-portal
 Use your connection string:
 
 ```
-mongodb+srv://username:password@cluster.mongodb.net/parent-teacher-portal
+MONGODB_URI = mongodb+srv://bhupendra23_db_user:bhupi123@cluster0.bivayj.mongodb.net/parent-teacher-portal
+
 ```
 
 ---
