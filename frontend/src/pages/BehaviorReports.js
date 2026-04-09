@@ -5,6 +5,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { asArray, getDisplayName, safeDateFormat } from '../utils/safeData';
 
 const BehaviorReports = () => {
   // Add custom animations
@@ -84,9 +85,10 @@ const BehaviorReports = () => {
       if (filters.endDate) params.endDate = filters.endDate;
 
       const response = await axios.get('/api/behavior', { params });
-      setBehaviors(response.data);
+      setBehaviors(asArray(response.data));
     } catch (error) {
       console.error('Error fetching behavior reports:', error);
+      setBehaviors([]);
     } finally {
       setLoading(false);
     }
@@ -95,9 +97,10 @@ const BehaviorReports = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
+      setStudents(asArray(response.data));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     }
   };
 
@@ -286,8 +289,8 @@ const BehaviorReports = () => {
                     </div>
                     <p className="text-slate-200 mb-4 leading-relaxed">{behavior.description}</p>
                     <div className="flex flex-wrap gap-4 text-sm text-amber-200 font-medium">
-                      <span><strong>Student:</strong> {behavior.studentId?.firstName} {behavior.studentId?.lastName}</span>
-                      <span><strong>Date:</strong> {format(new Date(behavior.date), 'MMM dd, yyyy')}</span>
+                      <span><strong>Student:</strong> {getDisplayName(behavior.studentId)}</span>
+                      <span><strong>Date:</strong> {safeDateFormat(behavior.date, 'MMM dd, yyyy')}</span>
                       {behavior.subject && <span><strong>Subject:</strong> {behavior.subject}</span>}
                       <span className="capitalize"><strong>Severity:</strong> {behavior.severity}</span>
                     </div>
