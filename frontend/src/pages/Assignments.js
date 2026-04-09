@@ -5,6 +5,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { asArray, safeDateFormat } from '../utils/safeData';
 
 const Assignments = () => {
   const { user } = useContext(AuthContext);
@@ -25,9 +26,10 @@ const Assignments = () => {
   const fetchAssignments = async () => {
     try {
       const response = await axios.get('/api/assignments');
-      setAssignments(response.data);
+      setAssignments(asArray(response.data));
     } catch (error) {
       console.error('Error fetching assignments:', error);
+      setAssignments([]);
     } finally {
       setLoading(false);
     }
@@ -36,9 +38,10 @@ const Assignments = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
+      setStudents(asArray(response.data));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     }
   };
 
@@ -153,7 +156,7 @@ const Assignments = () => {
                           <p className="text-slate-300 mt-1">{assignment.description}</p>
                           <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-300">
                             <span><strong>Subject:</strong> {assignment.subject}</span>
-                            <span><strong>Due Date:</strong> {format(new Date(assignment.dueDate), 'MMM dd, yyyy')}</span>
+                            <span><strong>Due Date:</strong> {safeDateFormat(assignment.dueDate, 'MMM dd, yyyy')}</span>
                             <span><strong>Max Grade:</strong> {assignment.maxGrade}</span>
                             <span className={`px-2 py-1 rounded capitalize ${
                                 assignment.status === 'published' ? 'bg-emerald-100 text-emerald-800' :

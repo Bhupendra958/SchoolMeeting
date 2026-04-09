@@ -2,8 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import Layout from '../components/Layout';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-import { format } from 'date-fns';
 import { FiSend, FiPaperclip } from 'react-icons/fi';
+import { asArray, getDisplayName, safeDateFormat } from '../utils/safeData';
 
 const Messaging = () => {
   // lightweight animation helpers
@@ -56,15 +56,28 @@ const Messaging = () => {
     }
   }, [selectedConversation]);
 
+  useEffect(() => {
+    const unreadIncomingMessages = messages.filter((message) => {
+      const senderId = typeof message?.senderId === 'object' ? message.senderId?._id : message?.senderId;
+      return message?._id && !message?.isRead && senderId && senderId !== user?.id;
+    });
+
+    unreadIncomingMessages.forEach((message) => {
+      markAsRead(message._id);
+    });
+  }, [messages, user?.id]);
+
   const fetchConversations = async () => {
     try {
       const response = await axios.get('/api/messages/conversations');
-      setConversations(response.data);
-      if (response.data.length > 0 && !selectedConversation) {
-        setSelectedConversation(response.data[0].partner._id);
+      const nextConversations = asArray(response.data);
+      setConversations(nextConversations);
+      if (nextConversations.length > 0 && !selectedConversation) {
+        setSelectedConversation(nextConversations[0]?.partner?._id || '');
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
@@ -75,9 +88,10 @@ const Messaging = () => {
       const response = await axios.get('/api/messages', {
         params: { conversationWith: selectedConversation }
       });
-      setMessages(response.data.reverse());
+      setMessages(asArray(response.data).reverse());
     } catch (error) {
       console.error('Error fetching messages:', error);
+      setMessages([]);
     }
   };
 
@@ -85,26 +99,33 @@ const Messaging = () => {
     try {
       const response = await axios.get('/api/users');
       // Only allow parent-teacher chat
-      let filtered = response.data;
+      let filtered = asArray(response.data);
       if (isParent) {
-        filtered = response.data.filter(u => u.role === 'teacher');
+        filtered = filtered.filter((entry) => entry?.role === 'teacher');
       } else if (isTeacher) {
-        filtered = response.data.filter(u => u.role === 'parent');
+        filtered = filtered.filter((entry) => entry?.role === 'parent');
       }
       setUsers(filtered);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     }
   };
 
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
+      setStudents(asArray(response.data));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     }
   };
+
+  const selectedConversationDetails =
+    conversations.find((conversation) => conversation?.partner?._id === selectedConversation)?.partner ||
+    users.find((entry) => entry?._id === selectedConversation) ||
+    null;
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -169,23 +190,23 @@ const Messaging = () => {
           <div className="divide-y divide-indigo-800/10">
             {conversations.map((conv) => (
               <button
-                key={conv.partner._id}
+                key={conv?.partner?._id || conv?.lastMessage?._id || 'conversation-unknown'}
                 onClick={() => {
-                  setSelectedConversation(conv.partner._id);
+                  setSelectedConversation(conv?.partner?._id || '');
                 }}
                 className={`w-full p-4 text-left hover:bg-indigo-800/30 transition-colors ${
-                  selectedConversation === conv.partner._id ? 'bg-indigo-800/30 border-l-4 border-amber-400' : ''
+                  selectedConversation === conv?.partner?._id ? 'bg-indigo-800/30 border-l-4 border-amber-400' : ''
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium text-slate-100">
-                      {conv.partner.firstName} {conv.partner.lastName}
+                      {getDisplayName(conv.partner)}
                     </p>
-                    <p className="text-sm text-amber-300 capitalize">{conv.partner.role}</p>
+                    <p className="text-sm text-amber-300 capitalize">{conv?.partner?.role || 'user'}</p>
                     {conv.lastMessage && (
                       <p className="text-sm text-slate-300 mt-1 truncate">
-                        {conv.lastMessage.content.substring(0, 50)}...
+                        {(conv?.lastMessage?.content || '').substring(0, 50)}...
                       </p>
                     )}
                   </div>
@@ -224,20 +245,15 @@ const Messaging = () => {
             <>
               <div className="p-4 border-b border-amber-800/12 bg-gradient-to-r from-indigo-700 to-purple-700 rounded-t-xl">
                 <h3 className="text-lg font-semibold text-white">
-                  {conversations.find(c => c.partner._id === selectedConversation)?.partner.firstName}{' '}
-                  {conversations.find(c => c.partner._id === selectedConversation)?.partner.lastName}
+                  {getDisplayName(selectedConversationDetails, 'Conversation')}
                 </h3>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-transparent">
                 {messages.map((message) => {
-                  const isOwn = message.senderId._id === user.id;
-                  const isUnread = !message.isRead && !isOwn;
-
-                  if (isUnread) {
-                    // mark as read for incoming unread messages
-                    markAsRead(message._id);
-                  }
+                  const senderId = typeof message?.senderId === 'object' ? message.senderId?._id : message?.senderId;
+                  const isOwn = senderId === user?.id;
+                  const senderName = getDisplayName(message?.senderId);
 
                   return (
                     <div key={message._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -249,7 +265,7 @@ const Messaging = () => {
                         } transition-transform duration-200 transform hover:scale-[1.01]`}
                       >
                         <p className={`text-xs font-semibold mb-1 ${isOwn ? 'text-indigo-100' : 'text-amber-200'}`}>
-                          {message.senderId.firstName} {message.senderId.lastName}
+                          {senderName}
                         </p>
                         {message.subject && (
                           <p className={`font-semibold mb-1 ${isOwn ? 'text-white' : 'text-slate-100'}`}>
@@ -258,7 +274,7 @@ const Messaging = () => {
                         )}
                         <p>{message.content}</p>
                         <p className={`text-xs mt-1 ${isOwn ? 'text-indigo-100' : 'text-slate-400'}`}>
-                          {format(new Date(message.createdAt), 'MMM dd, yyyy HH:mm')}
+                          {safeDateFormat(message.createdAt, 'MMM dd, yyyy HH:mm')}
                         </p>
                       </div>
                     </div>

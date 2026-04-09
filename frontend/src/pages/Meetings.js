@@ -5,6 +5,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2, FiCalendar } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { asArray, getDisplayName, safeDateFormat } from '../utils/safeData';
 
 const Meetings = () => {
   const { user } = useContext(AuthContext);
@@ -49,9 +50,10 @@ const Meetings = () => {
       if (filters.endDate) params.endDate = filters.endDate;
 
       const response = await axios.get('/api/meetings', { params });
-      setMeetings(response.data);
+      setMeetings(asArray(response.data));
     } catch (error) {
       console.error('Error fetching meetings:', error);
+      setMeetings([]);
     } finally {
       setLoading(false);
     }
@@ -60,18 +62,20 @@ const Meetings = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
+      setStudents(asArray(response.data));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     }
   };
 
   const fetchUsers = async () => {
     try {
       const response = await axios.get('/api/users');
-      setUsers(response.data);
+      setUsers(asArray(response.data));
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     }
   };
 
@@ -233,7 +237,7 @@ const Meetings = () => {
                     <p className="text-slate-300 mb-4">{meeting.description}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
                       <div>
-                        <strong>Date:</strong> {format(new Date(meeting.scheduledDate), 'MMM dd, yyyy HH:mm')}
+                        <strong>Date:</strong> {safeDateFormat(meeting.scheduledDate, 'MMM dd, yyyy HH:mm')}
                       </div>
                       <div>
                         <strong>Duration:</strong> {meeting.duration} min
@@ -242,17 +246,17 @@ const Meetings = () => {
                         <strong>Location:</strong> {meeting.location}
                       </div>
                       <div>
-                        <strong>Student:</strong> {meeting.studentId?.firstName} {meeting.studentId?.lastName}
+                        <strong>Student:</strong> {getDisplayName(meeting.studentId)}
                       </div>
                     </div>
                     {isParent && (
                       <div className="mt-2 text-sm text-gray-600">
-                        <strong>Teacher:</strong> {meeting.teacherId?.firstName} {meeting.teacherId?.lastName}
+                        <strong>Teacher:</strong> {getDisplayName(meeting.teacherId)}
                       </div>
                     )}
                     {isTeacher && (
                       <div className="mt-2 text-sm text-gray-600">
-                        <strong>Parent:</strong> {meeting.parentId?.firstName} {meeting.parentId?.lastName}
+                        <strong>Parent:</strong> {getDisplayName(meeting.parentId)}
                       </div>
                     )}
                     {meeting.notes && (

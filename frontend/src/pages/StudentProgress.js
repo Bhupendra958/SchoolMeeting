@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import Layout from '../components/Layout';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-import { format } from 'date-fns';
+import { asArray, safeDateFormat } from '../utils/safeData';
 
 const StudentProgress = () => {
   const { user } = useContext(AuthContext);
@@ -30,12 +30,14 @@ const StudentProgress = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
-      if (response.data.length > 0 && !selectedStudent) {
-        setSelectedStudent(response.data[0]._id);
+      const nextStudents = asArray(response.data);
+      setStudents(nextStudents);
+      if (nextStudents.length > 0 && !selectedStudent) {
+        setSelectedStudent(nextStudents[0]._id);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -45,9 +47,10 @@ const StudentProgress = () => {
     try {
       const params = { studentId: selectedStudent, ...filters };
       const response = await axios.get('/api/grades', { params });
-      setGrades(response.data);
+      setGrades(asArray(response.data));
     } catch (error) {
       console.error('Error fetching grades:', error);
+      setGrades([]);
     }
   };
 
@@ -210,7 +213,7 @@ const StudentProgress = () => {
                     return (
                       <tr key={grade._id} className="hover:bg-slate-800/10">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
-                          {format(new Date(grade.date), 'MMM dd, yyyy')}
+                          {safeDateFormat(grade.date, 'MMM dd, yyyy')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
                           {grade.subject}

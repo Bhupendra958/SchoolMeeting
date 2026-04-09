@@ -5,6 +5,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { asArray, safeDateFormat } from '../utils/safeData';
 
 const Attendance = () => {
   const { user } = useContext(AuthContext);
@@ -53,9 +54,10 @@ const Attendance = () => {
       if (filters.subject) params.subject = filters.subject;
 
       const response = await axios.get('/api/attendance', { params });
-      setAttendance(response.data);
+      setAttendance(asArray(response.data));
     } catch (error) {
       console.error('Error fetching attendance:', error);
+      setAttendance([]);
     } finally {
       setLoading(false);
     }
@@ -64,9 +66,10 @@ const Attendance = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
+      setStudents(asArray(response.data));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents([]);
     }
   };
 
@@ -268,7 +271,7 @@ const Attendance = () => {
                   attendance.map((record) => (
                     <tr key={record._id} className="hover:bg-indigo-50/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm ">
-                        {format(new Date(record.date), 'MMM dd, yyyy')}
+                        {safeDateFormat(record.date, 'MMM dd, yyyy')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm ">
                         {record.studentId?.firstName} {record.studentId?.lastName}
