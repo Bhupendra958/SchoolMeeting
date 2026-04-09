@@ -3,7 +3,8 @@ import Layout from '../components/Layout';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { FiSend, FiPaperclip } from 'react-icons/fi';
-import { asArray, getDisplayName, safeDateFormat } from '../utils/safeData';
+import { getDisplayName, safeDateFormat, withFallbackArray } from '../utils/safeData';
+import { getMockConversations, getMockMessages, getMockStudents, getMockUsers } from '../utils/mockData';
 
 const Messaging = () => {
   // lightweight animation helpers
@@ -70,14 +71,18 @@ const Messaging = () => {
   const fetchConversations = async () => {
     try {
       const response = await axios.get('/api/messages/conversations');
-      const nextConversations = asArray(response.data);
+      const nextConversations = withFallbackArray(response.data, getMockConversations(user));
       setConversations(nextConversations);
       if (nextConversations.length > 0 && !selectedConversation) {
         setSelectedConversation(nextConversations[0]?.partner?._id || '');
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      setConversations([]);
+      const fallbackConversations = getMockConversations(user);
+      setConversations(fallbackConversations);
+      if (fallbackConversations.length > 0 && !selectedConversation) {
+        setSelectedConversation(fallbackConversations[0]?.partner?._id || '');
+      }
     } finally {
       setLoading(false);
     }
@@ -88,10 +93,10 @@ const Messaging = () => {
       const response = await axios.get('/api/messages', {
         params: { conversationWith: selectedConversation }
       });
-      setMessages(asArray(response.data).reverse());
+      setMessages(withFallbackArray(response.data, getMockMessages(user, selectedConversation)).reverse());
     } catch (error) {
       console.error('Error fetching messages:', error);
-      setMessages([]);
+      setMessages(getMockMessages(user, selectedConversation).reverse());
     }
   };
 
@@ -99,7 +104,7 @@ const Messaging = () => {
     try {
       const response = await axios.get('/api/users');
       // Only allow parent-teacher chat
-      let filtered = asArray(response.data);
+      let filtered = withFallbackArray(response.data, getMockUsers(user));
       if (isParent) {
         filtered = filtered.filter((entry) => entry?.role === 'teacher');
       } else if (isTeacher) {
@@ -108,17 +113,17 @@ const Messaging = () => {
       setUsers(filtered);
     } catch (error) {
       console.error('Error fetching users:', error);
-      setUsers([]);
+      setUsers(getMockUsers(user));
     }
   };
 
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(asArray(response.data));
+      setStudents(withFallbackArray(response.data, getMockStudents(user)));
     } catch (error) {
       console.error('Error fetching students:', error);
-      setStudents([]);
+      setStudents(getMockStudents(user));
     }
   };
 

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import Layout from '../components/Layout';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-import { asArray, safeDateFormat } from '../utils/safeData';
+import { safeDateFormat, withFallbackArray } from '../utils/safeData';
+import { getMockGrades, getMockStudents } from '../utils/mockData';
 
 const StudentProgress = () => {
   const { user } = useContext(AuthContext);
@@ -30,14 +31,18 @@ const StudentProgress = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      const nextStudents = asArray(response.data);
+      const nextStudents = withFallbackArray(response.data, getMockStudents(user));
       setStudents(nextStudents);
       if (nextStudents.length > 0 && !selectedStudent) {
         setSelectedStudent(nextStudents[0]._id);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
-      setStudents([]);
+      const fallbackStudents = getMockStudents(user);
+      setStudents(fallbackStudents);
+      if (fallbackStudents.length > 0 && !selectedStudent) {
+        setSelectedStudent(fallbackStudents[0]._id);
+      }
     } finally {
       setLoading(false);
     }
@@ -47,10 +52,10 @@ const StudentProgress = () => {
     try {
       const params = { studentId: selectedStudent, ...filters };
       const response = await axios.get('/api/grades', { params });
-      setGrades(asArray(response.data));
+      setGrades(withFallbackArray(response.data, getMockGrades(user, selectedStudent)));
     } catch (error) {
       console.error('Error fetching grades:', error);
-      setGrades([]);
+      setGrades(getMockGrades(user, selectedStudent));
     }
   };
 

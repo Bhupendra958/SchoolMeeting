@@ -5,7 +5,8 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2, FiCalendar } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { asArray, getDisplayName, safeDateFormat } from '../utils/safeData';
+import { getDisplayName, safeDateFormat, withFallbackArray } from '../utils/safeData';
+import { getMockMeetings, getMockStudents, getMockUsers } from '../utils/mockData';
 
 const Meetings = () => {
   const { user } = useContext(AuthContext);
@@ -50,10 +51,10 @@ const Meetings = () => {
       if (filters.endDate) params.endDate = filters.endDate;
 
       const response = await axios.get('/api/meetings', { params });
-      setMeetings(asArray(response.data));
+      setMeetings(withFallbackArray(response.data, getMockMeetings(user)));
     } catch (error) {
       console.error('Error fetching meetings:', error);
-      setMeetings([]);
+      setMeetings(getMockMeetings(user));
     } finally {
       setLoading(false);
     }
@@ -62,20 +63,20 @@ const Meetings = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(asArray(response.data));
+      setStudents(withFallbackArray(response.data, getMockStudents(user)));
     } catch (error) {
       console.error('Error fetching students:', error);
-      setStudents([]);
+      setStudents(getMockStudents(user));
     }
   };
 
   const fetchUsers = async () => {
     try {
       const response = await axios.get('/api/users');
-      setUsers(asArray(response.data));
+      setUsers(withFallbackArray(response.data, getMockUsers(user)));
     } catch (error) {
       console.error('Error fetching users:', error);
-      setUsers([]);
+      setUsers(getMockUsers(user));
     }
   };
 

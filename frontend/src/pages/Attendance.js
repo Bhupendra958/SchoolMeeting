@@ -5,7 +5,8 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { asArray, safeDateFormat } from '../utils/safeData';
+import { safeDateFormat, withFallbackArray } from '../utils/safeData';
+import { getMockAttendance, getMockStudents } from '../utils/mockData';
 
 const Attendance = () => {
   const { user } = useContext(AuthContext);
@@ -54,10 +55,10 @@ const Attendance = () => {
       if (filters.subject) params.subject = filters.subject;
 
       const response = await axios.get('/api/attendance', { params });
-      setAttendance(asArray(response.data));
+      setAttendance(withFallbackArray(response.data, getMockAttendance(user)));
     } catch (error) {
       console.error('Error fetching attendance:', error);
-      setAttendance([]);
+      setAttendance(getMockAttendance(user));
     } finally {
       setLoading(false);
     }
@@ -66,10 +67,10 @@ const Attendance = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(asArray(response.data));
+      setStudents(withFallbackArray(response.data, getMockStudents(user)));
     } catch (error) {
       console.error('Error fetching students:', error);
-      setStudents([]);
+      setStudents(getMockStudents(user));
     }
   };
 

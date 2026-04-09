@@ -5,7 +5,8 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { asArray, getDisplayName, safeDateFormat } from '../utils/safeData';
+import { getDisplayName, safeDateFormat, withFallbackArray } from '../utils/safeData';
+import { getMockBehaviors, getMockStudents } from '../utils/mockData';
 
 const BehaviorReports = () => {
   // Add custom animations
@@ -85,10 +86,10 @@ const BehaviorReports = () => {
       if (filters.endDate) params.endDate = filters.endDate;
 
       const response = await axios.get('/api/behavior', { params });
-      setBehaviors(asArray(response.data));
+      setBehaviors(withFallbackArray(response.data, getMockBehaviors(user)));
     } catch (error) {
       console.error('Error fetching behavior reports:', error);
-      setBehaviors([]);
+      setBehaviors(getMockBehaviors(user));
     } finally {
       setLoading(false);
     }
@@ -97,10 +98,10 @@ const BehaviorReports = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(asArray(response.data));
+      setStudents(withFallbackArray(response.data, getMockStudents(user)));
     } catch (error) {
       console.error('Error fetching students:', error);
-      setStudents([]);
+      setStudents(getMockStudents(user));
     }
   };
 

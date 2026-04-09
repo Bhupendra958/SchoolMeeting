@@ -2,6 +2,11 @@ import { format } from 'date-fns';
 
 export const asArray = (value) => (Array.isArray(value) ? value : []);
 
+export const withFallbackArray = (value, fallback = []) => {
+  const normalized = asArray(value);
+  return normalized.length > 0 ? normalized : fallback;
+};
+
 export const safeDateFormat = (value, pattern, fallback = '-') => {
   if (!value) {
     return fallback;

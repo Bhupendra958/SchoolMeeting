@@ -5,6 +5,8 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2, FiBell, FiAlertCircle } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getMockAnnouncements, getMockStudents } from '../utils/mockData';
+import { withFallbackArray } from '../utils/safeData';
 
 const Announcements = () => {
   const { user } = useContext(AuthContext);
@@ -44,9 +46,10 @@ const Announcements = () => {
       if (filters.targetAudience) params.targetAudience = filters.targetAudience;
 
       const response = await axios.get('/api/announcements', { params });
+      const sourceAnnouncements = withFallbackArray(response.data, getMockAnnouncements(user));
       // Filter out expired announcements
       const now = new Date();
-      const activeAnnouncements = response.data.filter(ann => {
+      const activeAnnouncements = sourceAnnouncements.filter(ann => {
         if (!ann.isActive) return false;
         if (ann.expiresAt && new Date(ann.expiresAt) < now) return false;
         return true;
@@ -54,6 +57,7 @@ const Announcements = () => {
       setAnnouncements(activeAnnouncements);
     } catch (error) {
       console.error('Error fetching announcements:', error);
+      setAnnouncements(getMockAnnouncements(user));
     } finally {
       setLoading(false);
     }
@@ -62,9 +66,10 @@ const Announcements = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(response.data);
+      setStudents(withFallbackArray(response.data, getMockStudents(user)));
     } catch (error) {
       console.error('Error fetching students:', error);
+      setStudents(getMockStudents(user));
     }
   };
 

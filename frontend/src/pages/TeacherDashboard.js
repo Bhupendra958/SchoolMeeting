@@ -11,6 +11,8 @@ import {
   FiTrendingUp,
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { getMockAnnouncements, getMockAssignments, getMockAttendance, getMockMeetings, getMockStudents, getMockUnreadCount } from '../utils/mockData';
+import { withFallbackArray } from '../utils/safeData';
 
 const TeacherDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -39,7 +41,7 @@ const TeacherDashboard = () => {
         meetingsRes,
         announcementsRes,
         attendanceRes,
-      ] = await Promise.all([
+      ] = await Promise.allSettled([
         axios.get('/api/students'),
         axios.get('/api/assignments'),
         axios.get('/api/messages/unread-count'),
@@ -48,26 +50,63 @@ const TeacherDashboard = () => {
         axios.get('/api/attendance'),
       ]);
 
+      const students = studentsRes.status === 'fulfilled'
+        ? withFallbackArray(studentsRes.value.data, getMockStudents(user))
+        : getMockStudents(user);
+      const assignments = assignmentsRes.status === 'fulfilled'
+        ? withFallbackArray(assignmentsRes.value.data, getMockAssignments(user))
+        : getMockAssignments(user);
+      const meetings = meetingsRes.status === 'fulfilled'
+        ? withFallbackArray(meetingsRes.value.data, getMockMeetings(user))
+        : getMockMeetings(user);
+      const announcements = announcementsRes.status === 'fulfilled'
+        ? withFallbackArray(announcementsRes.value.data, getMockAnnouncements(user))
+        : getMockAnnouncements(user);
+      const attendance = attendanceRes.status === 'fulfilled'
+        ? withFallbackArray(attendanceRes.value.data, getMockAttendance(user))
+        : getMockAttendance(user);
+      const unreadMessages = messagesRes.status === 'fulfilled'
+        ? messagesRes.value.data?.unreadCount || getMockUnreadCount(user)
+        : getMockUnreadCount(user);
+
       const today = new Date().toISOString().split('T')[0];
 
-      const todayAttendance = attendanceRes.data.filter(
+      const todayAttendance = attendance.filter(
         (a) =>
           new Date(a.date).toISOString().split('T')[0] === today &&
           a.status === 'present'
       );
 
       setStats({
-        totalStudents: studentsRes.data.length,
-        pendingAssignments: assignmentsRes.data.filter(
+        totalStudents: students.length,
+        pendingAssignments: assignments.filter(
           (a) => a.status === 'published'
         ).length,
-        unreadMessages: messagesRes.data.unreadCount || 0,
-        upcomingMeetings: meetingsRes.data.length || 0,
-        recentAnnouncements: announcementsRes.data.length || 0,
+        unreadMessages,
+        upcomingMeetings: meetings.length || 0,
+        recentAnnouncements: announcements.length || 0,
         attendanceToday: todayAttendance.length,
       });
     } catch (error) {
       console.error('Dashboard error:', error);
+      const students = getMockStudents(user);
+      const assignments = getMockAssignments(user);
+      const attendance = getMockAttendance(user);
+      const announcements = getMockAnnouncements(user);
+      const meetings = getMockMeetings(user);
+      const today = new Date().toISOString().split('T')[0];
+      const todayAttendance = attendance.filter(
+        (a) => new Date(a.date).toISOString().split('T')[0] === today && a.status === 'present'
+      );
+
+      setStats({
+        totalStudents: students.length,
+        pendingAssignments: assignments.filter((a) => a.status === 'published').length,
+        unreadMessages: getMockUnreadCount(user),
+        upcomingMeetings: meetings.length,
+        recentAnnouncements: announcements.length,
+        attendanceToday: todayAttendance.length,
+      });
     } finally {
       setLoading(false);
     }

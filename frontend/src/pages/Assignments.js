@@ -5,7 +5,8 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { asArray, safeDateFormat } from '../utils/safeData';
+import { safeDateFormat, withFallbackArray } from '../utils/safeData';
+import { getMockAssignments, getMockStudents } from '../utils/mockData';
 
 const Assignments = () => {
   const { user } = useContext(AuthContext);
@@ -26,10 +27,10 @@ const Assignments = () => {
   const fetchAssignments = async () => {
     try {
       const response = await axios.get('/api/assignments');
-      setAssignments(asArray(response.data));
+      setAssignments(withFallbackArray(response.data, getMockAssignments(user)));
     } catch (error) {
       console.error('Error fetching assignments:', error);
-      setAssignments([]);
+      setAssignments(getMockAssignments(user));
     } finally {
       setLoading(false);
     }
@@ -38,10 +39,10 @@ const Assignments = () => {
   const fetchStudents = async () => {
     try {
       const response = await axios.get('/api/students');
-      setStudents(asArray(response.data));
+      setStudents(withFallbackArray(response.data, getMockStudents(user)));
     } catch (error) {
       console.error('Error fetching students:', error);
-      setStudents([]);
+      setStudents(getMockStudents(user));
     }
   };
 
