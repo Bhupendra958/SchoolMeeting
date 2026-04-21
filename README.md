@@ -196,12 +196,6 @@ This system is ideal for:
 
 ---
 
-## 📄 License
-
-This project is licensed under the **ISC License**.
-
----
-
 ## 👨‍💻 Author
 
 Developed by **Bhupendra**
